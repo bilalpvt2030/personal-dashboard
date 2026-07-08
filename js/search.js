@@ -15,21 +15,34 @@ function search(query) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
 
-  const { tasks, expenses, notes } = getState();
+  const { tasks, expenses, income, notes, goals, calendarEvents } = getState();
 
   const taskResults = tasks
     .filter((t) => t.title.toLowerCase().includes(q))
     .map((t) => ({ type: "Task", label: t.title, sub: t.status, view: "tasks" }));
 
   const expenseResults = expenses
-    .filter((e) => e.title.toLowerCase().includes(q))
+    .filter((e) => e.title.toLowerCase().includes(q) || (e.paidTo || "").toLowerCase().includes(q))
     .map((e) => ({ type: "Expense", label: e.title, sub: formatCurrency(e.amount), view: "expenses" }));
+
+  const incomeResults = income
+    .filter((i) => i.source.toLowerCase().includes(q) || (i.note || "").toLowerCase().includes(q))
+    .map((i) => ({ type: "Income", label: i.source, sub: formatCurrency(i.amount), view: "income" }));
 
   const noteResults = notes
     .filter((n) => n.text.toLowerCase().includes(q))
     .map((n) => ({ type: "Note", label: n.text.slice(0, 40), sub: "", view: "notes" }));
 
-  return [...taskResults, ...expenseResults, ...noteResults].slice(0, 8);
+  const goalResults = goals
+    .filter((g) => g.title.toLowerCase().includes(q))
+    .map((g) => ({ type: "Goal", label: g.title, sub: `${g.current} / ${g.target}`, view: "goals" }));
+
+  const eventResults = Object.entries(calendarEvents)
+    .flatMap(([date, events]) => events.map((ev) => ({ date, ...ev })))
+    .filter((ev) => ev.text.toLowerCase().includes(q))
+    .map((ev) => ({ type: "Event", label: ev.text, sub: ev.date, view: "calendar" }));
+
+  return [...taskResults, ...expenseResults, ...incomeResults, ...noteResults, ...goalResults, ...eventResults].slice(0, 8);
 }
 
 function initSearch() {

@@ -10,8 +10,10 @@
    ========================================================= */
 
 import { getState, subscribe } from "./state.js";
-import { formatCurrency, formatDate, greetingForNow, sumBy, currentMonthKey, animateNumber, escapeHTML } from "./utils.js";
+import { formatCurrency, formatDate, greetingForNow, sumBy, currentMonthKey, todayISO, animateNumber, escapeHTML } from "./utils.js";
 import { switchView } from "./app.js";
+import { computeHealthScore } from "./financial-health.js";
+import { ringSVG } from "./progress-ring.js";
 
 let clockInterval = null;
 let previousTotals = { income: 0, expenses: 0, balance: 0 };
@@ -20,17 +22,30 @@ function render() {
   const root = document.getElementById("view-dashboard");
   if (!root || root.classList.contains("hidden")) return;
 
-  const { income, expenses, tasks, goals } = getState();
+  const { income, expenses, tasks, goals, budgets, calendarEvents } = getState();
   const thisMonth = currentMonthKey();
 
   const monthIncome = sumBy(income.filter((i) => i.date.slice(0, 7) === thisMonth), (i) => i.amount);
   const monthExpense = sumBy(expenses.filter((e) => e.date.slice(0, 7) === thisMonth), (e) => e.amount);
   const balance = monthIncome - monthExpense;
+  const savingsRatePct = monthIncome > 0 ? Math.max(0, Math.round(((monthIncome - monthExpense) / monthIncome) * 100)) : 0;
+
+  const totalBudget = sumBy(Object.values(budgets), (v) => v);
+  const budgetUsedPct = totalBudget > 0 ? Math.min(100, Math.round((monthExpense / totalBudget) * 100)) : 0;
+
+  const health = computeHealthScore({ income, expenses, budgets, tasks });
 
   const upcomingTasks = [...tasks]
     .filter((t) => t.status !== "Done")
     .sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"))
     .slice(0, 5);
+
+  const today = todayISO();
+  const upcomingEvents = Object.entries(calendarEvents)
+    .filter(([date]) => date >= today)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(0, 4)
+    .flatMap(([date, events]) => events.map((ev) => ({ date, text: ev.text })));
 
   const recentActivity = [
     ...income.map((i) => ({ kind: "income", label: `${i.source} income`, amount: i.amount, date: i.date })),
@@ -49,6 +64,7 @@ function render() {
         <button class="btn btn--sm" data-goto="expenses">+ Expense</button>
         <button class="btn btn--sm" data-goto="income">+ Income</button>
         <button class="btn btn--sm" data-goto="tasks">+ Task</button>
+        <button class="btn btn--sm" data-goto="notes">+ Note</button>
       </div>
     </div>
 
@@ -66,8 +82,23 @@ function render() {
         <span class="stat-value ${balance < 0 ? "stat-value--negative" : ""}" id="counter-balance">₹0</span>
       </div>
       <div class="stat-card stat-card--accent">
-        <span class="stat-label">Open tasks</span>
-        <span class="stat-value">${tasks.filter((t) => t.status !== "Done").length}</span>
+        <span class="stat-label">Pending / Completed tasks</span>
+        <span class="stat-value stat-value--sm">${tasks.filter((t) => t.status !== "Done").length} / ${tasks.filter((t) => t.status === "Done").length}</span>
+      </div>
+    </div>
+
+    <div class="dashboard-grid dashboard-grid--rings">
+      <div class="card ring-card">
+        ${ringSVG(health.overall, 84)}
+        <span class="stat-label">Financial Health Score</span>
+      </div>
+      <div class="card ring-card">
+        ${ringSVG(savingsRatePct, 84)}
+        <span class="stat-label">Savings this month</span>
+      </div>
+      <div class="card ring-card">
+        ${ringSVG(budgetUsedPct, 84)}
+        <span class="stat-label">Budget used</span>
       </div>
     </div>
 
@@ -120,6 +151,20 @@ function render() {
               </ul>`
         }
         <button class="btn btn--ghost btn--sm" data-goto="goals">View goals</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card__title">Upcoming events</h3>
+        ${
+          upcomingEvents.length === 0
+            ? `<p class="muted small">Nothing on the calendar yet.</p>`
+            : `<ul class="simple-list">
+                ${upcomingEvents
+                  .map((ev) => `<li><span>${escapeHTML(ev.text)}</span><span class="muted small">${formatDate(ev.date)}</span></li>`)
+                  .join("")}
+              </ul>`
+        }
+        <button class="btn btn--ghost btn--sm" data-goto="calendar">Open calendar</button>
       </div>
     </div>
   `;

@@ -19,6 +19,7 @@ import { initNotes, renderNotes } from "./notes.js";
 import { initGoals, renderGoals } from "./goals.js";
 import { initCalendar, renderCalendar } from "./calendar.js";
 import { initSearch } from "./search.js";
+import { initQuickAdd } from "./quick-add.js";
 
 const VIEWS = ["dashboard", "income", "expenses", "budget", "analytics", "tasks", "notes", "goals", "calendar"];
 
@@ -83,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initGoals();
   initCalendar();
   initSearch();
+  initQuickAdd();
 });
 
 export { switchView };

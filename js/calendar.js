@@ -11,6 +11,19 @@
 import { getState, updateState, generateId, subscribe } from "./state.js";
 import { todayISO, escapeHTML } from "./utils.js";
 import { showToast } from "./toast.js";
+import { formModal, confirmModal } from "./modal.js";
+
+const EVENT_TYPES = ["Reminder", "Meeting", "Birthday", "Salary Day", "Bill Due", "Weekend Plan", "Task", "Other"];
+const EVENT_COLORS = {
+  Reminder: "#6366f1",
+  Meeting: "#3b82f6",
+  Birthday: "#ec4899",
+  "Salary Day": "#22c55e",
+  "Bill Due": "#ef4444",
+  "Weekend Plan": "#f59e0b",
+  Task: "#a855f7",
+  Other: "#6b7280",
+};
 
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth(); // 0-indexed
@@ -61,7 +74,13 @@ function render() {
             return `
               <div class="calendar-cell ${isWeekend ? "calendar-cell--weekend" : ""} ${isToday ? "calendar-cell--today" : ""}" data-date="${key}">
                 <span class="calendar-cell__num">${d}</span>
-                ${events.slice(0, 2).map((ev) => `<span class="calendar-event">${escapeHTML(ev.text)}</span>`).join("")}
+                ${events
+                  .slice(0, 2)
+                  .map(
+                    (ev) =>
+                      `<span class="calendar-event" data-event-id="${ev.id}" data-date="${key}" style="background:${EVENT_COLORS[ev.type] || EVENT_COLORS.Other}" title="${escapeHTML(ev.type || "Other")} - click to remove">${escapeHTML(ev.text)}</span>`
+                  )
+                  .join("")}
                 ${events.length > 2 ? `<span class="calendar-event calendar-event--more">+${events.length - 2} more</span>` : ""}
               </div>`;
           })
@@ -88,20 +107,46 @@ function render() {
   });
 
   root.querySelectorAll(".calendar-cell:not(.calendar-cell--empty)").forEach((cell) =>
-    cell.addEventListener("click", () => promptAddEvent(cell.dataset.date))
+    cell.addEventListener("click", (e) => {
+      const chip = e.target.closest(".calendar-event:not(.calendar-event--more)");
+      if (chip) {
+        e.stopPropagation();
+        return removeEvent(chip.dataset.date, chip.dataset.eventId);
+      }
+      addEventForDate(cell.dataset.date);
+    })
   );
 }
 
-function promptAddEvent(dateKeyStr) {
-  const text = window.prompt("Add a short note for this day:");
-  if (!text || !text.trim()) return;
+async function addEventForDate(dateKeyStr) {
+  const result = await formModal({
+    title: `Add event - ${dateKeyStr}`,
+    submitLabel: "Add to calendar",
+    fields: [
+      { name: "type", label: "Type", type: "select", options: EVENT_TYPES, value: "Reminder" },
+      { name: "text", label: "What's happening?", type: "text" },
+    ],
+  });
+  if (!result || !result.text.trim()) return;
 
   updateState((state) => {
     if (!state.calendarEvents[dateKeyStr]) state.calendarEvents[dateKeyStr] = [];
-    state.calendarEvents[dateKeyStr].push({ id: generateId(), text: text.trim() });
+    state.calendarEvents[dateKeyStr].push({ id: generateId(), text: result.text.trim(), type: result.type });
     return state;
   });
   showToast("Added to calendar", "success");
+}
+
+async function removeEvent(dateKeyStr, eventId) {
+  const ok = await confirmModal({ title: "Remove this calendar event?", confirmLabel: "Remove", danger: true });
+  if (!ok) return;
+
+  updateState((state) => {
+    state.calendarEvents[dateKeyStr] = (state.calendarEvents[dateKeyStr] || []).filter((ev) => ev.id !== eventId);
+    if (state.calendarEvents[dateKeyStr].length === 0) delete state.calendarEvents[dateKeyStr];
+    return state;
+  });
+  showToast("Event removed", "info");
 }
 
 function initCalendar() {

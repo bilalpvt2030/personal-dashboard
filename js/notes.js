@@ -11,6 +11,7 @@
 import { getState, updateState, generateId, subscribe } from "./state.js";
 import { escapeHTML } from "./utils.js";
 import { showToast } from "./toast.js";
+import { confirmModal } from "./modal.js";
 
 const COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fecaca", "#e9d5ff", "#fed7aa"];
 
@@ -19,7 +20,8 @@ function render() {
   if (!root || root.classList.contains("hidden")) return;
 
   const { notes } = getState();
-  const sorted = [...notes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // Pinned notes float to the top, newest-first within each group.
+  const sorted = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt.localeCompare(a.createdAt));
 
   root.innerHTML = `
     <div class="view-header">
@@ -38,9 +40,15 @@ function render() {
             ${sorted
               .map(
                 (n) => `
-              <div class="note-card" style="background:${n.color}" data-id="${n.id}">
+              <div class="note-card ${n.pinned ? "note-card--pinned" : ""}" style="background:${n.color}" data-id="${n.id}">
+                ${n.pinned ? `<span class="material-symbols-outlined note-card__pin-icon">push_pin</span>` : ""}
                 <p class="note-card__text">${escapeHTML(n.text)}</p>
-                <button class="icon-btn delete-note" data-id="${n.id}" title="Delete">&times;</button>
+                <div class="note-card__actions">
+                  <button class="icon-btn pin-note" data-id="${n.id}" title="${n.pinned ? "Unpin" : "Pin"}">
+                    <span class="material-symbols-outlined" style="font-size:16px">push_pin</span>
+                  </button>
+                  <button class="icon-btn delete-note" data-id="${n.id}" title="Delete">&times;</button>
+                </div>
               </div>`
               )
               .join("")}
@@ -56,14 +64,31 @@ function render() {
 
     updateState((state) => {
       const color = COLORS[state.notes.length % COLORS.length];
-      state.notes.push({ id: generateId(), text, color, createdAt: new Date().toISOString() });
+      state.notes.push({ id: generateId(), text, color, pinned: false, createdAt: new Date().toISOString() });
       return state;
     });
     showToast("Note added", "success");
   });
 
-  root.querySelectorAll(".delete-note").forEach((btn) =>
+  root.querySelectorAll(".pin-note").forEach((btn) =>
     btn.addEventListener("click", () => {
+      updateState((state) => {
+        const note = state.notes.find((n) => n.id === btn.dataset.id);
+        if (note) note.pinned = !note.pinned;
+        return state;
+      });
+    })
+  );
+
+  root.querySelectorAll(".delete-note").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const ok = await confirmModal({
+        title: "Delete this note?",
+        confirmLabel: "Delete",
+        danger: true,
+      });
+      if (!ok) return;
+
       updateState((state) => {
         state.notes = state.notes.filter((n) => n.id !== btn.dataset.id);
         return state;

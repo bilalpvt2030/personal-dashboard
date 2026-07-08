@@ -11,6 +11,7 @@
 import { getState, updateState, generateId, subscribe } from "./state.js";
 import { formatDate, todayISO, escapeHTML } from "./utils.js";
 import { showToast } from "./toast.js";
+import { confirmModal } from "./modal.js";
 
 const PRIORITIES = ["Low", "Medium", "High"];
 const STATUSES = ["To Do", "In Progress", "Done"];
@@ -87,14 +88,16 @@ function render() {
           ? emptyState()
           : `<div class="task-list">
               ${sorted
-                .map(
-                  (t) => `
-                <div class="task-item ${t.status === "Done" ? "task-item--done" : ""}" data-id="${t.id}">
+                .map((t) => {
+                  const isOverdue = t.status !== "Done" && t.deadline && t.deadline < todayISO();
+                  return `
+                <div class="task-item ${t.status === "Done" ? "task-item--done" : ""} ${isOverdue ? "task-item--overdue" : ""}" data-id="${t.id}">
                   <input type="checkbox" class="task-toggle" data-id="${t.id}" ${t.status === "Done" ? "checked" : ""} />
                   <div class="task-item__body">
                     <div class="task-item__title-row">
                       <span class="task-item__title">${escapeHTML(t.title)}</span>
                       <span class="badge ${priorityClass(t.priority)}">${t.priority}</span>
+                      ${isOverdue ? `<span class="badge priority--high">Overdue</span>` : ""}
                     </div>
                     ${t.description ? `<p class="muted small">${escapeHTML(t.description)}</p>` : ""}
                     <div class="task-item__meta">
@@ -105,9 +108,14 @@ function render() {
                       </select>
                     </div>
                   </div>
-                  <button class="icon-btn delete-task" data-id="${t.id}" title="Delete">&times;</button>
-                </div>`
-                )
+                  <div class="row-actions">
+                    <button class="icon-btn duplicate-task" data-id="${t.id}" title="Duplicate">
+                      <span class="material-symbols-outlined" style="font-size:16px">content_copy</span>
+                    </button>
+                    <button class="icon-btn delete-task" data-id="${t.id}" title="Delete">&times;</button>
+                  </div>
+                </div>`;
+                })
                 .join("")}
             </div>`
       }
@@ -125,7 +133,9 @@ function render() {
 
   root.querySelector(".task-list")?.addEventListener("click", (e) => {
     const del = e.target.closest(".delete-task");
-    if (del) handleDelete(del.dataset.id);
+    if (del) return handleDelete(del.dataset.id);
+    const dup = e.target.closest(".duplicate-task");
+    if (dup) return handleDuplicate(dup.dataset.id);
   });
 
   root.querySelectorAll(".task-toggle").forEach((cb) =>
@@ -183,12 +193,32 @@ function setStatus(id, status) {
   });
 }
 
-function handleDelete(id) {
+async function handleDelete(id) {
+  const ok = await confirmModal({
+    title: "Delete this task?",
+    message: "This can't be undone.",
+    confirmLabel: "Delete",
+    danger: true,
+  });
+  if (!ok) return;
+
   updateState((state) => {
     state.tasks = state.tasks.filter((t) => t.id !== id);
     return state;
   });
   showToast("Task deleted", "info");
+}
+
+function handleDuplicate(id) {
+  const { tasks } = getState();
+  const original = tasks.find((t) => t.id === id);
+  if (!original) return;
+
+  updateState((state) => {
+    state.tasks.push({ ...original, id: generateId(), status: "To Do", createdAt: new Date().toISOString() });
+    return state;
+  });
+  showToast(`Duplicated "${original.title}"`, "success");
 }
 
 function emptyState() {
