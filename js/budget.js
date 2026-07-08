@@ -13,6 +13,7 @@ import { getState, updateState, subscribe } from "./state.js";
 import { formatCurrency, currentMonthKey, sumBy, escapeHTML } from "./utils.js";
 import { showToast } from "./toast.js";
 import { CATEGORIES } from "./expenses.js";
+import { ringSVG } from "./progress-ring.js";
 
 function render() {
   const root = document.getElementById("view-budget");
@@ -33,6 +34,7 @@ function render() {
 
   const totalLimit = sumBy(rows, (r) => r.limit);
   const totalSpent = sumBy(rows, (r) => r.spent);
+  const overallPct = totalLimit > 0 ? Math.min((totalSpent / totalLimit) * 100, 100) : 0;
 
   root.innerHTML = `
     <div class="view-header">
@@ -42,10 +44,13 @@ function render() {
       </div>
     </div>
 
-    <div class="stat-row">
-      <div class="stat-card"><span class="stat-label">Total budgeted</span><span class="stat-value">${formatCurrency(totalLimit)}</span></div>
-      <div class="stat-card"><span class="stat-label">Spent this month</span><span class="stat-value">${formatCurrency(totalSpent)}</span></div>
-      <div class="stat-card"><span class="stat-label">Remaining</span><span class="stat-value">${formatCurrency(Math.max(totalLimit - totalSpent, 0))}</span></div>
+    <div class="card budget-overview">
+      ${ringSVG(overallPct, 88)}
+      <div class="stat-row budget-overview__stats">
+        <div class="stat-card"><span class="stat-label">Total budgeted</span><span class="stat-value">${formatCurrency(totalLimit)}</span></div>
+        <div class="stat-card"><span class="stat-label">Spent this month</span><span class="stat-value">${formatCurrency(totalSpent)}</span></div>
+        <div class="stat-card"><span class="stat-label">Remaining</span><span class="stat-value">${formatCurrency(Math.max(totalLimit - totalSpent, 0))}</span></div>
+      </div>
     </div>
 
     <form id="budget-form" class="card form-grid">

@@ -11,8 +11,9 @@
 import { getState, updateState, generateId, subscribe } from "./state.js";
 import { formatCurrency, formatDate, todayISO, currentMonthKey, sumBy, escapeHTML } from "./utils.js";
 import { showToast } from "./toast.js";
+import { confirmModal } from "./modal.js";
 
-const SOURCES = ["Salary", "Freelance", "Stipend", "Business", "Investment", "Gift", "Other"];
+const SOURCES = ["Salary", "Freelancing", "Business", "Bonus", "Scholarship", "Pocket Money", "Parents", "Investment", "Other Income"];
 
 function render() {
   const root = document.getElementById("view-income");
@@ -117,7 +118,15 @@ function handleAdd(e) {
   showToast(`Added ${formatCurrency(amount)} income from ${source}`, "success");
 }
 
-function handleDelete(id) {
+async function handleDelete(id) {
+  const ok = await confirmModal({
+    title: "Delete this income entry?",
+    message: "This can't be undone.",
+    confirmLabel: "Delete",
+    danger: true,
+  });
+  if (!ok) return;
+
   updateState((state) => {
     state.income = state.income.filter((i) => i.id !== id);
     return state;
