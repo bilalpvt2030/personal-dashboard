@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Personal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span>Dashboard</span>
+    </div>
+    <nav class="sidebar__nav">
+      <button class="nav-link nav-link--active" data-view="dashboard"><span class="material-symbols-outlined">home</span>Dashboard</button>
+      <button class="nav-link" data-view="income"><span class="material-symbols-outlined">payments</span>Income</button>
+      <button class="nav-link" data-view="expenses"><span class="material-symbols-outlined">receipt_long</span>Expenses</button>
+      <button class="nav-link" data-view="budget"><span class="material-symbols-outlined">savings</span>Budget</button>
+      <button class="nav-link" data-view="analytics"><span class="material-symbols-outlined">bar_chart</span>Analytics</button>
+      <button class="nav-link" data-view="tasks"><span class="material-symbols-outlined">checklist</span>Tasks</button>
+      <button class="nav-link" data-view="notes"><span class="material-symbols-outlined">sticky_note_2</span>Notes</button>
+      <button class="nav-link" data-view="goals"><span class="material-symbols-outlined">flag</span>Goals</button>
+      <button class="nav-link" data-view="calendar"><span class="material-symbols-outlined">calendar_month</span>Calendar</button>
+    </nav>
+    <div class="sidebar__footer">
+      <span class="muted small">Built with vanilla JS</span>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="icon-btn topbar__menu" id="menu-toggle" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <div class="global-search-wrap">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input id="global-search" type="search" placeholder="Search tasks, expenses, notes..." />
+        <div id="search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+
+      <div class="topbar__right">
+        <span class="muted small" id="current-date-badge"></span>
+      </div>
+    </header>
+
+    <main class="content">
+      <section id="view-dashboard" class="view"></section>
+      <section id="view-income" class="view hidden"></section>
+      <section id="view-expenses" class="view hidden"></section>
+      <section id="view-budget" class="view hidden"></section>
+      <section id="view-analytics" class="view hidden"></section>
+      <section id="view-tasks" class="view hidden"></section>
+      <section id="view-notes" class="view hidden"></section>
+      <section id="view-goals" class="view hidden"></section>
+      <section id="view-calendar" class="view hidden"></section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
