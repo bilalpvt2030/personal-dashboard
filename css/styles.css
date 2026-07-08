@@ -170,7 +170,7 @@ input, select, textarea { font-family: inherit; font-size: 0.9rem; }
 .search-result:hover { background: var(--bg); }
 .search-result__label { flex: 1; font-weight: 600; font-size: 0.85rem; }
 
-.topbar__right { margin-left: auto; }
+.topbar__right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
 .content {
   padding: 24px 28px 60px;
@@ -385,6 +385,7 @@ textarea { resize: vertical; }
 }
 .task-item--done { opacity: 0.55; }
 .task-item--done .task-item__title { text-decoration: line-through; }
+.task-item--overdue { border-color: var(--danger); background: #fef2f2; }
 .task-toggle { margin-top: 3px; width: 16px; height: 16px; }
 .task-item__body { flex: 1; }
 .task-item__title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -411,7 +412,10 @@ textarea { resize: vertical; }
   animation: fadeIn 0.2s ease;
 }
 .note-card__text { font-size: 0.88rem; white-space: pre-wrap; padding-right: 20px; color: #1f2937; }
-.note-card .delete-note { position: absolute; top: 8px; right: 8px; }
+.note-card__actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; }
+.note-card--pinned { box-shadow: 0 0 0 2px var(--accent), var(--shadow-sm); }
+.note-card__pin-icon { position: absolute; top: 8px; left: 8px; font-size: 16px; color: #1f2937; opacity: 0.6; }
+.pin-note.icon-btn:hover { background: rgba(0,0,0,0.08); color: inherit; }
 
 /* ---------- Goals ---------- */
 
@@ -458,9 +462,69 @@ textarea { resize: vertical; }
 
 .quick-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.dashboard-grid--rings { grid-template-columns: repeat(3, 1fr); margin-bottom: 16px; }
 .simple-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .simple-list li { display: flex; justify-content: space-between; font-size: 0.85rem; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .simple-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+/* ---------- Progress ring ---------- */
+
+.progress-ring { display: block; }
+.progress-ring__fill { transition: stroke-dashoffset 0.5s ease; }
+.progress-ring__label { font-size: 15px; font-weight: 800; fill: var(--text); font-family: "Manrope", sans-serif; }
+
+.ring-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.budget-overview {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.budget-overview__stats { flex: 1; margin-bottom: 0; min-width: 260px; }
+
+.goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.goal-card__body { display: flex; align-items: center; gap: 16px; margin: 10px 0; }
+.goal-card__stats { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Row actions (duplicate / delete icon groups) ---------- */
+
+.row-actions { display: flex; gap: 2px; align-items: center; white-space: nowrap; }
+
+/* ---------- Modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+.modal-card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.18s ease;
+}
+.modal-card__title { margin-bottom: 6px; }
+.modal-card__message { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px; }
+.modal-card__form { margin: 14px 0; }
+.modal-card__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.btn--danger { background: var(--danger); color: white; }
+.btn--danger:hover { background: #dc2626; }
 
 /* ---------- Empty states ---------- */
 
@@ -530,6 +594,9 @@ textarea { resize: vertical; }
   .app-shell.sidebar-open .sidebar { left: 0; }
   .content { padding: 16px; }
   .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-grid--rings { grid-template-columns: 1fr 1fr; }
   .field--wide { grid-column: span 1; }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar__right span.muted { display: none; }
+  .goals-grid { grid-template-columns: 1fr; }
 }
